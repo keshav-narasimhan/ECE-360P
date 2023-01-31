@@ -17,13 +17,6 @@ public class ForkJoinPSort {
     	QuickSortFork quicksort = new QuickSortFork(A, begin, end, increasing);
     	pool.invoke(quicksort);
     }
-    
-//    public static void main(String[] args) {
-//    	int[] array =  {10, 9, 11, 2, 3, 0, 20, 15, 30, 29, 12, 17};
-//    	QuickSortFork qsf = new QuickSortFork(array, 0, array.length, true);
-//    	System.out.println(qsf.findPartition());
-//    	System.out.println(Arrays.toString(array));
-//    }
 }
 
 class QuickSortFork extends RecursiveTask<Void> {
@@ -152,8 +145,8 @@ class QuickSortFork extends RecursiveTask<Void> {
 				qsf.join();
 			} else {
 				QuickSortFork qsleft = new QuickSortFork(this.array, this.begin, pivot + 1, this.increasing);
-				QuickSortFork qsright = new QuickSortFork(this.array, pivot + 1, this.end, this.increasing);
 				qsleft.fork();
+				QuickSortFork qsright = new QuickSortFork(this.array, pivot + 1, this.end, this.increasing);
 				qsright.fork();
 				qsleft.join();
 				qsright.join();

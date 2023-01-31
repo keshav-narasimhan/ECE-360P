@@ -26,15 +26,8 @@ public class PMerge {
     	
     	es.shutdown();
     	while(!es.isTerminated());
-//    	System.out.println(Arrays.toString(C));
     }
     
-//    public static void main(String[] args) {
-//    	int[] A = {1, 2, 4, 5};
-//    	int[] B = {0, 7};
-//    	int[] C = new int[6];
-//    	parallelMerge(A, B, C, 5);
-//    }
 }
 
 class MergeHelper implements Callable<Integer> {
@@ -71,14 +64,12 @@ class MergeHelper implements Callable<Integer> {
 					while(index < A.length && A[index] == target) {
 						index += 1;
 					}
-//					System.out.println("target = " + target + ", " + Arrays.toString(this.A) + ", index = " + index);
 					return index;
 				} else {
 					index -= 1;
 					while(index >= 0 && A[index] == target) {
 						index -= 1;
 					}
-//					System.out.println("target = " + target + ", " + Arrays.toString(this.A) + ", index = " + index);
 					return index + 1;
 				}
 			} else if (pindex == index) {
@@ -96,9 +87,4 @@ class MergeHelper implements Callable<Integer> {
 		
 		return index;
 	}
-	
-//	public static void main(String[] args) {
-//		int[] A = {1};
-//		System.out.println(new MergeHelper().getLocation(A, 3));
-//	}
 }
