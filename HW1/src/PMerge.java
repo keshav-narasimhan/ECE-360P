@@ -54,6 +54,7 @@ class MergeHelper implements Callable<Integer> {
 	
 	public Integer call() {
 		int newIndex = ind + getLocation();
+		newIndex = C.length - newIndex - 1;
 		C[newIndex] = this.target;
 		return 0;
 	}
