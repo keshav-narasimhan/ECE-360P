@@ -5,10 +5,12 @@
 public class MonitorCyclicBarrier implements CyclicBarrier {
 
     private int parties;
+    private int count;
     // TODO Add other useful variables
 
     public MonitorCyclicBarrier(int parties) {
         this.parties = parties;
+        this.count = 0;
         // TODO Add any other initialization statements
     }
 
@@ -24,8 +26,17 @@ public class MonitorCyclicBarrier implements CyclicBarrier {
      * the last to arrive.
      */
     public int await() throws InterruptedException {
-        // TODO Implement this function
-        return -1;
+        count++;
+        int index = parties - count;
+        if(count == parties) {
+            count = 0;
+            notifyAll();
+        }
+        else
+            wait();
+
+
+        return index;
     }
 
     /*

@@ -19,7 +19,7 @@ public class SemaphoreCyclicBarrier implements CyclicBarrier {
         // TODO Add any other initialization statements
         this.count++;
         this.isActive = true;
-        this.mutex = new Semaphore(1);
+        this.mutex = new Semaphore(parties);
     }
 
     /*
