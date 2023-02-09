@@ -7,10 +7,14 @@ public class MonitorCyclicBarrier implements CyclicBarrier {
     private int parties;
     private int count;
     // TODO Add other useful variables
+    private boolean isActive;
+    private Object monitor;
 
     public MonitorCyclicBarrier(int parties) {
         this.parties = parties;
         this.count = 0;
+        this.isActive = true;
+        this.monitor = new Object();
         // TODO Add any other initialization statements
     }
 
@@ -26,17 +30,24 @@ public class MonitorCyclicBarrier implements CyclicBarrier {
      * the last to arrive.
      */
     public int await() throws InterruptedException {
-        count++;
-        int index = parties - count;
-        if(count == parties) {
-            count = 0;
-            notifyAll();
-        }
-        else
-            wait();
-
-
-        return index;
+    	synchronized(this.monitor) {
+    		if (!this.isActive) {
+        		return -1;
+        	}
+        	
+        	int arrivalIndex = this.count;
+            this.count++;
+            
+            if(this.count == this.parties) {
+                this.count = 0;
+                this.monitor.notifyAll();
+            }
+            else {
+            	this.monitor.wait();
+            }
+            
+            return arrivalIndex;
+    	}
     }
 
     /*
@@ -46,7 +57,14 @@ public class MonitorCyclicBarrier implements CyclicBarrier {
      * the state of the barrier is reset to its initial value.
      */
     public void activate() throws InterruptedException {
-        // TODO Implement this function
+        synchronized(this.monitor) {
+        	if (this.isActive) {
+        		return;
+        	}
+        	
+        	this.count = 0;
+        	this.isActive = true;
+        }
     }
 
     /*
@@ -54,6 +72,13 @@ public class MonitorCyclicBarrier implements CyclicBarrier {
      * It also releases any waiting threads
      */
     public void deactivate() throws InterruptedException {
-        // TODO Implement this function
+        synchronized(this.monitor) {
+        	if (!this.isActive) {
+        		return;
+        	}
+        	
+        	this.isActive = false;
+        	this.monitor.notifyAll();
+        }
     }
 }
