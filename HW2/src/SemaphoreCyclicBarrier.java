@@ -6,20 +6,28 @@ import java.util.concurrent.Semaphore;
 
 /* Use only semaphores to accomplish the required synchronization */
 public class SemaphoreCyclicBarrier implements CyclicBarrier {
-
+	// given class variable
     private int parties;
-    // TODO Add other useful variables
+
+    // made new variables
     private int index;
-    private int count = 0;
+    private int count;
     private boolean isActive;
     private Semaphore mutex;
+    private Semaphore sema1;
+    private Semaphore sema2;
+    private boolean isSema1;
 
     public SemaphoreCyclicBarrier(int parties) {
         this.parties = parties;
-        // TODO Add any other initialization statements
-        this.count++;
+        
+        // initialize custom variables
+        this.count = 0;
         this.isActive = true;
-        this.mutex = new Semaphore(parties);
+        this.mutex = new Semaphore(1);
+        this.sema1 = new Semaphore(0);
+        this.sema2 = new Semaphore(0);
+        this.isSema1 = true;
     }
 
     /*
@@ -34,8 +42,42 @@ public class SemaphoreCyclicBarrier implements CyclicBarrier {
      * the last to arrive.
      */
     public int await() throws InterruptedException {
-        // TODO Implement this function
-        return -1;
+    	// acquire the semaphore
+    	this.mutex.acquire();
+    	
+    	// inactive CyclicBarrier - release thread
+    	if (!this.isActive) {
+    		this.mutex.release();
+    		return -1;
+    	}
+    	
+    	// get the arrival index and update the count
+    	int arrivalIndex = this.count;
+    	this.count++;
+    	
+    	// release threads if reached the barrier
+    	if (this.count == this.parties) {
+    		this.count = 0;
+    		if (this.isSema1) {
+    			this.sema1.release(this.parties - 1);
+    		} else {
+    			this.sema2.release(this.parties - 1);
+    		}
+    		this.isSema1 = !this.isSema1;
+    		this.mutex.release();
+    	} 
+    	// block the thread if barrier quantity hasn't reached yet
+    	else {
+    		this.mutex.release();
+    		if (this.isSema1) {
+    			this.sema1.acquire();
+    		} else {
+    			this.sema2.acquire();
+    		}
+    	}
+    	
+    	// return the index
+        return arrivalIndex;
     }
 
     /*
@@ -45,7 +87,19 @@ public class SemaphoreCyclicBarrier implements CyclicBarrier {
      * the state of the barrier is reset to its initial value.
      */
     public void activate() throws InterruptedException {
-        // TODO Implement this function
+        // acquire the mutex
+    	this.mutex.acquire();
+        
+    	// do nothing if already active
+        if(this.isActive) {
+        	this.mutex.release();
+        	return;
+        }
+        
+        // set to active and release the mutex
+        this.isActive = true;
+        this.count = 0;
+        this.mutex.release();
     }
 
     /*
@@ -53,6 +107,26 @@ public class SemaphoreCyclicBarrier implements CyclicBarrier {
      * It also releases any waiting threads
      */
     public void deactivate() throws InterruptedException {
-        // TODO Implement this function
+        // acquire the mutex
+    	this.mutex.acquire();
+        
+    	// do nothing if already inactive
+        if (!this.isActive) {
+        	this.mutex.release();
+        	return;
+        }
+        
+        // set to inactive
+        this.isActive = false;
+        
+        // release any waiting threads and release the mutex
+        if (this.count > 0) {
+        	if (this.isSema1) {
+        		this.sema1.release(this.count);
+        	} else {
+        		this.sema2.release(this.count);
+        	}
+        }
+        this.mutex.release();
     }
 }
