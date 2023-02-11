@@ -1,8 +1,7 @@
+// kn9558
+// ai6358
+
 import java.util.concurrent.Semaphore;
-
-// EID 1
-// EID 2
-
 
 /* Use only semaphores to accomplish the required synchronization */
 public class SemaphoreCyclicBarrier implements CyclicBarrier {
@@ -10,7 +9,6 @@ public class SemaphoreCyclicBarrier implements CyclicBarrier {
     private int parties;
 
     // made new variables
-    private int index;
     private int count;
     private boolean isActive;
     private Semaphore mutex;
