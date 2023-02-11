@@ -59,46 +59,64 @@ public class PriorityQueue {
 
 	public int add(String name, int priority) {
         // Adds the name with its priority to this queue.
-        // Returns the current position in the list where the name was inserted;
+        // Returns the current position in the 
+		// list where the name was inserted;
         // otherwise, returns -1 if the name is already present in the list.
         // This method blocks when the list is full.
 		
-		// block thread if the queue is full
-		if (this.size >= this.capacity) {
-			try { this.isFull.await(); } 
-			catch (InterruptedException e) { e.printStackTrace(); }
-		}
+		// does this name already exist?
+		int found = search(name);
+		if (found >= 0) { return -1; }
 		
-		// helper variables
-		Node node = new Node(name, priority);
-		Node curr = this.head;
-		Node prev = null;
-		int index = -1;
-		
+		// lock the head
+		this.head.getLock().lock();
+		int index = 0;
 		try {
-			// hand-over-hand locking
-			curr.getLock().lock();
+			// block until there is space to insert elements into the queue
+			while(this.size == this.capacity) {
+				try { this.isFull.await(); } 
+				catch (InterruptedException e) { e.printStackTrace(); }
+			}
 			
-			// insert new node into queue
-			while (curr.getNext() != null && curr.getNext().getPriority() > priority) {
+			// add the first element if the queue is empty
+			Node node = new Node(name, priority);
+			Node curr = this.head.getNext();
+			if (curr == null) {
+				this.head.setNext(node);
+				this.size++;
+				return 0;
+			}
+			
+			// iterate through the queue to find where to insert the new node
+			Node prev = this.head;
+			curr.getLock().lock();
+			while (curr != null && curr.getPriority() > priority) {
+				if (prev != this.head) { prev.getLock().unlock(); }
 				prev = curr;
 				curr = curr.getNext();
-				prev.getLock().unlock();
-				curr.getLock().lock();
+				if (curr != null) { curr.getLock().lock(); }
 				index++;
 			}
-			node.setNext(curr.getNext());
-			curr.setNext(node);
-		} finally {
-			// unlock all nodes and update size
-			curr.getLock().unlock();
+			
+			// insert the new node
+			prev.setNext(node);
+			node.setNext(curr);
+			
+			// increment the size
 			this.size++;
 			
-			// unblock waiting threads waiting to retrieve elements
-			this.notEmpty.notifyAll();
+			// unlock any held locks
+			if (prev != this.head) { prev.getLock().unlock(); }
+			if (curr != null) { curr.getLock().unlock(); }
+		} finally {
+			// signal to any waiting threads
+			this.notEmpty.signalAll();
+			
+			// unlock the head
+			this.head.getLock().unlock();
 		}
 		
-		// return index where the new node was inserted into queue
+		// return the index of the inserted node
 		return index;
 	}
 
@@ -106,33 +124,35 @@ public class PriorityQueue {
         // Returns the position of the name in the list;
         // otherwise, returns -1 if the name is not found.
 		
-		// helper variables
-		Node curr = this.head;
-		Node prev = null;
-		int index = -1;
-		
+		// lock the head
+		this.head.getLock().lock();
 		try {
-			// hand-over-hand locking
-			curr.getLock().lock();
+			// return -1 if the queue is empty
+			Node curr = this.head.getNext();
+			if (curr == null) {
+				return -1; 
+			}
 			
-			// iterate over nodes to find node with same name
-			while (curr.getNext() != null) {
-				if (curr.getName().equals(name)) {
-					return index;
+			// iterate through the queue to see if the name exists
+			int index = 0;
+			curr.getLock().lock();
+			while (curr != null) {
+				if (curr.getName().equals(name)) { 
+					curr.getLock().unlock();
+					return index; 
 				}
-				
-				prev = curr;
-				curr = curr.getNext();
-				prev.getLock().unlock();
-				curr.getLock().lock();
+				Node next = curr.getNext();
+				if (next != null) { next.getLock().lock(); }
+				curr.getLock().unlock();
+				curr = next;
 				index++;
 			}
 		} finally {
-			// unlock all nodes
-			curr.getLock().unlock();
+			// unlock the head
+			this.head.getLock().unlock();
 		}
 		
-		// the name was not found in the list
+		// return -1 if the name does not exist
 		return -1;
 	}
 
@@ -140,29 +160,38 @@ public class PriorityQueue {
         // Retrieves and removes the name with the highest priority in the list,
         // or blocks the thread if the list is empty.
 		
-		// lock head of queue
+		// lock the head
 		this.head.getLock().lock();
-		
-		// block thread given empty queue
-		while(this.head.getNext() == null) {
-			try { this.notEmpty.await(); } 
-			catch (InterruptedException e) { e.printStackTrace(); }
+		String name = "";
+		try {	
+			// block until the queue is non-empty
+			while(this.size == 0) {
+				try { this.notEmpty.await(); } 
+				catch (InterruptedException e) { e.printStackTrace(); }
+			}
+			
+			// obtain the first element and get its name
+			Node first = this.head.getNext();
+			first.getLock().lock();
+			name = first.getName();
+			
+			// decrement the size of the queue
+			this.size--;
+			
+			// update the queue
+			this.head.setNext(first.getNext());
+			
+			// unlock the removed node
+			first.getLock().unlock();
+		} finally {
+			// signal any waiting threads
+			this.isFull.signalAll();
+			
+			// unlock the head
+			this.head.getLock().unlock();
 		}
 		
-		// retrieve the name of the previous head of the queue and update queue
-		Node oldHead = this.head.getNext();
-		oldHead.getLock().lock();
-		String name = oldHead.getName();
-		this.head.setNext(oldHead.getNext());
-		
-		// unlock nodes to allow other threads to access the queue
-		oldHead.getLock().unlock();
-		this.head.getLock().unlock();
-		
-		// unblock threads waiting to insert new elements
-		this.isFull.notifyAll();
-		
-		// return the name of the previous head of the queue
+		// return the name
 		return name;
 	}
 }
