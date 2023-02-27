@@ -9,21 +9,42 @@ public class Library {
 	// class variables
 	private HashMap<String, Integer> inventory;
 	private HashMap<String, ArrayList<String>> records;
+	private HashMap<Integer, String> loans;
+	private int loan_id;
 	
 	public Library(String file) {
 		this.inventory = new HashMap<>();
 		this.records = new HashMap<>();
+		this.loans = new HashMap<>();
+		this.loan_id = 1;
 		initialize_library(file);
 	}
 	
-	public String begin_loan(String username, String bookname) {
-		// TODO
-		return "";
+	public synchronized String begin_loan(String username, String bookname) {
+		if (!this.inventory.containsKey(bookname)) {
+			return "Request Failed - We do not have this book";
+		}
+		
+		int quantity = this.inventory.get(bookname);
+		if (quantity == 0) {
+			return "Request Failed - Book not available";
+		}
+		
+		this.inventory.replace(bookname, quantity - 1);
+		this.loans.put(loan_id, bookname);
+		loan_id++;
+		return "Your request has been approved, " + loan_id + " " + username + " " + bookname;
 	}
 	
-	public String end_loan(int loan_id) {
-		// TODO
-		return "";
+	public synchronized String end_loan(int id) {
+		if (!this.loans.containsKey(id)) {
+			return id + " not found, no such borrow record";
+		}
+		
+		String bookname = this.loans.get(id);
+		int quantity = this.inventory.get(bookname);
+		this.inventory.replace(bookname, quantity + 1);
+		return id + " is returned";
 	}
 	
 	public String get_loans(String username) {
