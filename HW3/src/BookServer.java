@@ -11,6 +11,7 @@ public class BookServer {
         udpPort = 8000;
 
         // parse the inventory file
+        Library library = new Library(fileName);
 
         // TODO: handle request from clients
     }
