@@ -8,7 +8,7 @@ import java.util.Scanner;
 public class Library {
 	// class variables
 	private HashMap<String, Integer> inventory;
-	private HashMap<String, ArrayList<String>> records;
+	private HashMap<String, ArrayList<Integer>> records;
 	private HashMap<Integer, String> loans;
 	private int loan_id;
 	
@@ -32,8 +32,16 @@ public class Library {
 		
 		this.inventory.replace(bookname, quantity - 1);
 		this.loans.put(loan_id, bookname);
+		if (this.records.containsKey(username)) {
+			ArrayList<Integer> list_of_loans = this.records.get(username);
+			list_of_loans.add(loan_id);
+		} else {
+			ArrayList<Integer> list_of_loans = new ArrayList<>();
+			list_of_loans.add(loan_id);
+			this.records.put(username, list_of_loans);
+		}
 		loan_id++;
-		return "Your request has been approved, " + loan_id + " " + username + " " + bookname;
+		return "Your request has been approved, " + (loan_id - 1) + " " + username + " " + bookname;
 	}
 	
 	public synchronized String end_loan(int id) {
@@ -47,14 +55,37 @@ public class Library {
 		return id + " is returned";
 	}
 	
-	public String get_loans(String username) {
-		// TODO
-		return "";
+	public synchronized String get_loans(String username) {
+		ArrayList<Integer> list_of_loans = this.records.get(username);
+		if (list_of_loans == null) {
+			return "No record found for " + username;
+		}
+		
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < list_of_loans.size(); i++) {
+			int l = list_of_loans.get(i);
+			String bookname = this.loans.get(l);
+			sb.append(l + " " + bookname);
+			if (i < list_of_loans.size() - 1) {
+				sb.append("\n");
+			}
+		}
+		
+		return sb.toString();
 	}
 	
-	public String get_inventory() {
-		// TODO
-		return "";
+	public synchronized String get_inventory() {
+		StringBuilder sb = new StringBuilder();
+		for (String bookname : this.inventory.keySet()) {
+			int quantity = this.inventory.get(bookname);
+			sb.append(bookname + " " + quantity + "\n");
+		}
+		
+		if (this.inventory.keySet() != null) {
+			sb.deleteCharAt(sb.length() - 1);
+		}
+		
+		return sb.toString();
 	}
 	
 	private void initialize_library(String file) {
