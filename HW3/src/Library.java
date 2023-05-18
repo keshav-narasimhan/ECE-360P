@@ -1,7 +1,12 @@
+// kn9558
+// ai6358
+
+import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Scanner;
 
@@ -10,12 +15,14 @@ public class Library {
 	private HashMap<String, Integer> inventory;
 	private HashMap<String, ArrayList<Integer>> records;
 	private HashMap<Integer, String> loans;
+	private HashMap<Integer, String> loaners;
 	private int loan_id;
 	
 	public Library(String file) {
 		this.inventory = new HashMap<>();
 		this.records = new HashMap<>();
 		this.loans = new HashMap<>();
+		this.loaners = new HashMap<>();
 		this.loan_id = 1;
 		initialize_library(file);
 	}
@@ -32,6 +39,7 @@ public class Library {
 		
 		this.inventory.replace(bookname, quantity - 1);
 		this.loans.put(loan_id, bookname);
+		this.loaners.put(loan_id, username);
 		if (this.records.containsKey(username)) {
 			ArrayList<Integer> list_of_loans = this.records.get(username);
 			list_of_loans.add(loan_id);
@@ -50,8 +58,12 @@ public class Library {
 		}
 		
 		String bookname = this.loans.get(id);
+		String username = this.loaners.get(id);
 		int quantity = this.inventory.get(bookname);
 		this.inventory.replace(bookname, quantity + 1);
+		ArrayList<Integer> list_of_loans = this.records.get(username);
+		int index = list_of_loans.indexOf(id);
+		list_of_loans.remove(index);
 		return id + " is returned";
 	}
 	
@@ -86,6 +98,19 @@ public class Library {
 		}
 		
 		return sb.toString();
+	}
+	
+	public synchronized void write_inventory(String content) {
+		String file_name = "inventory.txt";
+		
+		try {
+			File file = new File(file_name);
+			FileOutputStream fos = new FileOutputStream(file);
+			fos.write(content.getBytes());
+			fos.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	private void initialize_library(String file) {
